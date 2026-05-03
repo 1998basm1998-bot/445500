@@ -33,7 +33,7 @@
         </div>
         <div class="product-grid">
             <div class="product-card" onclick="switchProduct('glasses')">
-                <div style="font-size:24px;">🕶️</div>
+                 <div style="font-size:24px;">🕶️</div>
                 <p>نظارة فاخرة</p>
             </div>
             <div class="product-card" onclick="switchProduct('hat')">
@@ -53,7 +53,7 @@
         <div class="camera-frame">
             <a-scene mindar-face="uiLoading:no; uiScanning:no" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
                 <a-assets>
-                    <a-asset-item id="glassesModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/glasses/scene.gltf"></a-asset-item>
+                    <a-asset-item id="glassesModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/glasses/scene.gltf"></a-asset-item>
                     <a-asset-item id="hatModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/face-tracking/assets/hat/scene.gltf"></a-asset-item>
                 </a-assets>
                 <a-camera active="false" position="0 0 0"></a-camera>
@@ -77,12 +77,21 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             const sceneEl = document.querySelector('a-scene');
-            sceneEl.addEventListener("ready", () => {
+            sceneEl.addEventListener("arReady", () => {
                 document.getElementById('loading-overlay').style.display = 'none';
             });
+            sceneEl.addEventListener("arError", () => {
+                document.getElementById('loading-overlay').innerHTML = "<div style='text-align:center;'>فشل تشغيل الكاميرا<br><span style='font-size:12px;'>الرجاء السماح بالوصول للكاميرا أو فتح الموقع في نافذة جديدة.</span></div>";
+            });
+            
+            // Fallback timeout in case of silent failure
+            setTimeout(() => {
+                const overlay = document.getElementById('loading-overlay');
+                if(overlay.style.display !== 'none') {
+                    overlay.innerHTML = "<div style='text-align:center;'>تأخرت الكاميرا كثيراً!<br><span style='font-size:12px;'>غالباً المتصفح يمنع الكاميرا داخل المعاينة المصغرة.<br>اضغط على زر (فتح في علامة تبويب جديدة / Open in new tab) بالزاوية العلوية لكي تعمل.</span></div>";
+                }
+            }, 8000);
         });
     </script>
 </body>
 </html>
-
-لقد تم إعداد العرض التقديمي والكود البرمجي ليكون جاهزاً للتنفيذ. هل تود إضافة أي تفاصيل أخرى بخصوص لوحة تحكم التجار؟
