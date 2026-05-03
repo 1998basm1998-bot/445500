@@ -1,0 +1,151 @@
+import os
+
+# Define the HTML content for the AR Try-On prototype
+html_content = """<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تجربة التسوق الافتراضي - AR Try-On</title>
+    
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* واجهة المستخدم فوق الكاميرا */
+        #ui-container {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 50px;
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .product-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.2s;
+        }
+
+        .product-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .info-panel {
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; }
+        p { margin: 5px 0; font-size: 0.9rem; }
+
+        /* شاشة التحميل */
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">جاري تحضير تجربة الواقع المعزز...</div>
+
+    <div id="ui-container">
+        <div class="info-panel">
+            <h1>متجر المستقبل الذكي</h1>
+            <p>جرب المنتجات الآن عبر الكاميرا</p>
+        </div>
+        <div class="controls">
+            <button class="product-btn" style="background-color: #ff4757;" onclick="switchModel('red')"></button>
+            <button class="product-btn" style="background-color: #2e86de;" onclick="switchModel('blue')"></button>
+            <button class="product-btn" style="background-color: #2ed573;" onclick="switchModel('green')"></button>
+        </div>
+    </div>
+
+    <a-scene 
+        mindar-face="uiLoading: #loading-screen; uiScanning: #loading-screen" 
+        embedded 
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false">
+        
+        <a-assets>
+            <a-asset-item id="glassesModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/face-tracking/assets/glasses/scene.gltf"></a-asset-item>
+        </a-assets>
+
+        <a-camera active="false" position="0 0 0"></a-camera>
+
+        <a-entity mindar-face-target="anchorIndex: 168">
+            <a-gltf-model 
+                id="virtual-product"
+                rotation="0 0 0" 
+                position="0 0 0" 
+                scale="0.01 0.01 0.01" 
+                src="#glassesModel">
+            </a-gltf-model>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        // وظيفة لتبديل ألوان أو أنواع المنتجات برمجياً
+        function switchModel(color) {
+            const model = document.querySelector('#virtual-product');
+            if(color === 'red') model.setAttribute('material', 'color', 'red');
+            if(color === 'blue') model.setAttribute('material', 'color', 'blue');
+            alert('تم اختيار المنتج: ' + color + ' (يمكنك ربط موديلات مختلفة هنا)');
+        }
+
+        // إخفاء شاشة التحميل عند الجاهزية
+        document.addEventListener("DOMContentLoaded", () => {
+            const sceneEl = document.querySelector('a-scene');
+            sceneEl.addEventListener("ready", (event) => {
+                document.getElementById('loading-screen').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
+"""
+
+# Saving the file
+file_path = "ar_store_prototype.html"
+with open(file_path, "w", encoding="utf-8") as f:
+    f.write(html_content)
