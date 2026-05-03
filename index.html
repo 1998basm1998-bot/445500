@@ -4,24 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>AR Store - Abu Amir</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { margin: 0; padding: 0; font-family: sans-serif; overflow: hidden; background-color: #000; }
         
-        /* قسم المنتجات في الأعلى */
-        #store-front { height: 45%; background: white; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; overflow-y: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .product-card { border: 1px solid #ddd; padding: 10px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .product-card:active { transform: scale(0.95); background: #eef2ff; }
-        .product-card img { width: 50px; height: 50px; object-fit: contain; }
+        /* Store Front UI as Overlay */
+        #store-front { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; 
+            height: 40%;
+            background: rgba(255, 255, 255, 0.95); 
+            padding: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            z-index: 10; 
+            overflow-y: auto; 
+            box-sizing: border-box;
+            border-bottom: 3px solid #2563eb;
+            display: flex;
+            flex-direction: column;
+        }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         
-        /* قسم الكاميرا في الأسفل (مربع) */
-        #ar-container { height: 55%; width: 100%; position: relative; background: #000; display: flex; justify-content: center; align-items: center; }
-        .camera-frame { width: 100%; height: 100%; max-width: 500px; aspect-ratio: 1/1; position: relative; overflow: hidden; border-top: 4px solid #2563eb; }
+        /* Grid */
+        .product-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+            flex-grow: 1;
+        }
+        .product-card { 
+            border: 1px solid #ddd; 
+            padding: 5px; 
+            border-radius: 12px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            background: white; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .product-card:active { transform: scale(0.95); background: #eef2ff; border-color: #2563eb; }
+        .product-card div { font-size: 32px; margin-bottom: 5px; }
+        .product-card p { margin: 0; font-size: 14px; font-weight: bold; color: #333; }
         
-        #loading-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; display:flex; justify-content:center; align-items:center; z-index:100; }
+        /* Support text */
+        .help-text { font-size:12px; color:#666; margin-top:10px; text-align: center; flex-shrink: 0; }
+        
+        /* Camera UI elements */
+        .mindar-ui-overlay { display: flex; align-items: center; justify-content: center; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: transparent; z-index: 2; pointer-events: none; }
+        .mindar-ui-loading { background: rgba(0, 0, 0, 0.8); color: white; padding: 15px 30px; border-radius: 12px; font-weight: bold; text-align: center; line-height: 1.5; pointer-events: auto; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -33,64 +66,131 @@
         </div>
         <div class="product-grid">
             <div class="product-card" onclick="switchProduct('glasses')">
-                 <div style="font-size:24px;">🕶️</div>
-                <p>نظارة فاخرة</p>
+                <div>🕶️</div>
+                <p>نظارة</p>
             </div>
             <div class="product-card" onclick="switchProduct('hat')">
-                <div style="font-size:24px;">🧢</div>
-                <p>قبعة كاجوال</p>
+                <div>🧢</div>
+                <p>قبعة</p>
             </div>
             <div class="product-card" onclick="switchProduct('clear')">
-                <div style="font-size:24px;">❌</div>
-                <p>إزالة الفلتر</p>
+                <div>❌</div>
+                <p>إزالة</p>
             </div>
         </div>
-        <p style="font-size:12px; color:#666; margin-top:15px;">* اختر منتجاً ليظهر فوراً في الكاميرا بالأسفل</p>
+        <p class="help-text">اختر منتجاً ليظهر فوراً على وجهك</p>
     </div>
 
-    <div id="ar-container">
-        <div id="loading-overlay">جاري تشغيل الكاميرا...</div>
-        <div class="camera-frame">
-            <a-scene mindar-face="uiLoading:no; uiScanning:no" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-                <a-assets>
-                    <a-asset-item id="glassesModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/glasses/scene.gltf"></a-asset-item>
-                    <a-asset-item id="hatModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/face-tracking/assets/hat/scene.gltf"></a-asset-item>
-                </a-assets>
-                <a-camera active="false" position="0 0 0"></a-camera>
-                
-                <a-entity id="glasses-ent" mindar-face-target="anchorIndex: 168" visible="false">
-                    <a-gltf-model src="#glassesModel" rotation="0 0 0" position="0 0 0" scale="0.01 0.01 0.01"></a-gltf-model>
-                </a-entity>
-                
-                <a-entity id="hat-ent" mindar-face-target="anchorIndex: 10" visible="false">
-                    <a-gltf-model src="#hatModel" rotation="0 -90 0" position="0 -0.2 -0.5" scale="0.008 0.008 0.008"></a-gltf-model>
-                </a-entity>
-            </a-scene>
-        </div>
+    <!-- Custom Loading UI -->
+    <div id="custom-loader" class="mindar-ui-overlay">
+        <div class="mindar-ui-loading">جاري تشغيل كاميرا الذكاء الاصطناعي...<br><span style="font-size:12px; color:#ddd">(الرجاء إعطاء الصلاحية)</span></div>
     </div>
+
+    <!-- AR Scene -->
+    <a-scene mindar-face="uiLoading:no; uiError:no; uiScanning:no" embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-assets timeout="30000">
+            <a-asset-item id="headModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/sparkar/headOccluder.glb"></a-asset-item>
+            <a-asset-item id="glassesModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/glasses/scene.gltf"></a-asset-item>
+            <a-asset-item id="hatModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/hat2/scene.gltf"></a-asset-item>
+        </a-assets>
+
+        <a-camera position="0 0 0" active="false"></a-camera>
+        
+        <!-- Lights -->
+        <a-light type="ambient" color="#ffffff" intensity="1.2"></a-light>
+        <a-light type="directional" color="#ffffff" intensity="1" position="0 1 1"></a-light>
+        
+        <!-- Head Occluder (hides parts of glasses that shouldn't show) -->
+        <a-entity mindar-face-target="anchorIndex: 168">
+            <a-gltf-model mindar-face-occluder position="0 -0.3 0.15" rotation="0 0 0" scale="0.065 0.065 0.065" src="#headModel"></a-gltf-model>
+        </a-entity>
+        
+        <!-- Targets -->
+        <a-entity mindar-face-target="anchorIndex: 168">
+            <!-- Debug shape (hidden by default, can be used to test face tracking) -->
+            <a-sphere id="debug-nose" radius="0.03" color="red" scale="0 0 0"></a-sphere>
+            
+            <a-gltf-model id="glasses-model" src="#glassesModel" rotation="0 0 0" position="0 0 0" scale="0 0 0"></a-gltf-model>
+        </a-entity>
+        
+        <a-entity mindar-face-target="anchorIndex: 10">
+            <a-sphere id="debug-head" radius="0.05" color="blue" scale="0 0 0"></a-sphere>
+            
+            <a-gltf-model id="hat-model" src="#hatModel" rotation="0 0 0" position="0 -0.2 -0.5" scale="0 0 0"></a-gltf-model>
+        </a-entity>
+    </a-scene>
 
     <script>
         function switchProduct(type) {
-            document.getElementById('glasses-ent').setAttribute('visible', type === 'glasses');
-            document.getElementById('hat-ent').setAttribute('visible', type === 'hat');
+            const glasses = document.getElementById('glasses-model');
+            const hat = document.getElementById('hat-model');
+            
+            // Use Direct Animation overwrites (Scale from 0 to full, instead of using 'visible' toggle)
+            // This prevents A-Frame lag and shader compilation stutter on first click, AND prevents the animation race-condition.
+            if (type === 'glasses') {
+                glasses.setAttribute('animation', 'property: scale; to: 0.01 0.01 0.01; dur: 800; easing: easeOutElastic');
+            } else {
+                glasses.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeOutQuad');
+            }
+            
+            if (type === 'hat') {
+                hat.setAttribute('animation', 'property: scale; to: 0.008 0.008 0.008; dur: 800; easing: easeOutElastic');
+            } else {
+                hat.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeOutQuad');
+            }
+            
+            // Show red dot on nose if 'clear' is pressed just to prove tracking works (optional debugging)
+            const debugNose = document.getElementById('debug-nose');
+            if (debugNose) {
+                debugNose.setAttribute('animation', `property: scale; to: ${type === 'clear' ? '1 1 1' : '0 0 0'}; dur: 300; easing: easeOutQuad`);
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             const sceneEl = document.querySelector('a-scene');
+            
             sceneEl.addEventListener("arReady", () => {
-                document.getElementById('loading-overlay').style.display = 'none';
-            });
-            sceneEl.addEventListener("arError", () => {
-                document.getElementById('loading-overlay').innerHTML = "<div style='text-align:center;'>فشل تشغيل الكاميرا<br><span style='font-size:12px;'>الرجاء السماح بالوصول للكاميرا أو فتح الموقع في نافذة جديدة.</span></div>";
+                document.getElementById('custom-loader').classList.add('hidden');
             });
             
-            // Fallback timeout in case of silent failure
-            setTimeout(() => {
-                const overlay = document.getElementById('loading-overlay');
-                if(overlay.style.display !== 'none') {
-                    overlay.innerHTML = "<div style='text-align:center;'>تأخرت الكاميرا كثيراً!<br><span style='font-size:12px;'>غالباً المتصفح يمنع الكاميرا داخل المعاينة المصغرة.<br>اضغط على زر (فتح في علامة تبويب جديدة / Open in new tab) بالزاوية العلوية لكي تعمل.</span></div>";
+            sceneEl.addEventListener("arError", (event) => {
+                let errorMessage = "فشل تشغيل الكاميرا ❌";
+                let subMessage = "الرجاء التأكد من وجود كاميرا وإعطاء الصلاحية لها.";
+                
+                if (event && event.detail && event.detail.error) {
+                    const err = event.detail.error;
+                    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                        errorMessage = "تم رفض صلاحية الكاميرا 🚫";
+                        subMessage = "يجب عليك السماح للمتصفح باستخدام الكاميرا. الرجاء التحقق من إعدادات المتصفح ثم حاول مجدداً.";
+                    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                        errorMessage = "لا توجد كاميرا 📸";
+                        subMessage = "لم نتمكن من العثور على أي كاميرا متصلة بجهازك.";
+                    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                        errorMessage = "الكاميرا قيد الاستخدام ⚠️";
+                        subMessage = "الكاميرا مستخدمة حالياً بواسطة تطبيق آخر. الرجاء إغلاق التطبيقات الأخرى وتحديث الصفحة.";
+                    } else {
+                        subMessage = "حدث خطأ غير متوقع: " + err.message + ". جرب فتح الموقع في نافذة جديدة.";
+                    }
+                } else {
+                     // Check if inside an iframe without permission
+                     if (window !== window.top) {
+                         subMessage = "غالباً المتصفح يمنع الكاميرا داخل المعاينة. الرجاء الضغط على زر (فتح في نافذة جديدة / Open in new tab).";
+                     } else {
+                         subMessage = "حدث خطأ أثناء محاولة الوصول للكاميرا. تأكد من إعدادات الخصوصية بجهازك.";
+                     }
                 }
-            }, 8000);
+
+                document.querySelector('.mindar-ui-loading').innerHTML = `${errorMessage}<br><span style='font-size:12px; display:block; margin-top:5px; line-height: 1.4;'>${subMessage}</span><br><button onclick='window.location.reload()' style='margin-top:10px; padding:5px 15px; border-radius:5px; border:none; background:#2563eb; color:white; cursor:pointer;'>تحديث المحاولة</button>`;
+                document.querySelector('.mindar-ui-loading').style.backgroundColor = "rgba(220, 38, 38, 0.9)";
+            });
+            
+            // Fallback timeout in case AR engine gets stuck quietly
+            setTimeout(() => {
+                const loader = document.getElementById('custom-loader');
+                if(!loader.classList.contains('hidden')) {
+                    document.querySelector('.mindar-ui-loading').innerHTML = "يبدو أن الكاميرا تأخرت جداً ⏱️<br><strong style='color:#ffeb3b'>إذا كنت تستخدم المعاينة المصغرة،</strong><br>الرجاء الضغط على زر فتح الموقع في نافذة جديدة (Open in new tab)<br><button onclick='window.location.reload()' style='margin-top:10px; padding:5px 15px; border-radius:5px; border:none; background:#2563eb; color:white; cursor:pointer;'>تحديث المحاولة</button>";
+                }
+            }, 10000);
         });
     </script>
 </body>
